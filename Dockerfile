@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	ca-certificates \
     apt-utils \
 	qbittorrent-nox \
+	expect \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY . /app
