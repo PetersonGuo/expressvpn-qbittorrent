@@ -1,0 +1,11 @@
+services:
+  expressvpn-app:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+

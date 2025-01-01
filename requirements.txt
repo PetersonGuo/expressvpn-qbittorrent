@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+requests
+qbittorrent-api
+Jinja2
+selenium
+webdriver-manager
+
