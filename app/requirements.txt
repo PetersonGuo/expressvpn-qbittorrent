@@ -5,4 +5,4 @@ qbittorrent-api
 Jinja2
 selenium
 webdriver-manager
-uvicorn
+

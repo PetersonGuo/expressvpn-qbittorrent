@@ -1,2 +1,3 @@
 docker-compose.yml
 __pycache__
+.my_pycache
