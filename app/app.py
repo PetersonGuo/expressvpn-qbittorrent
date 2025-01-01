@@ -1,10 +1,5 @@
 """Main module"""
 
-import os
-import subprocess
-import time
-import subprocess
-import requests
 from fastapi import FastAPI, Query, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,10 +15,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Configuration
 SEARCH_URL = "https://thepiratebay.org/search.php?"
 QBITTORRENT_API = "http://127.0.0.1:8080"
-VLC_PATH = "vlc"  # Ensure VLC is in your PATH
+QBT_USERNAME = os.getenv("QBT_USERNAME")
+QBT_PASSWORD = os.getenv("QBT_PASSWORD")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -38,30 +39,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-def start_vpn():
-    """Start ExpressVPN if not connected."""
-    try:
-        subprocess.run(["expressvpn", "connect"], check=True)
-        print("ExpressVPN connected successfully.")
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError("Failed to connect ExpressVPN. Please check your configuration.")
-
-
-def is_vpn_connected():
-    """Check if ExpressVPN is connected."""
-    try:
-        result = subprocess.run(
-            ["expressvpn", "status"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        return "Connected" in result.stdout
-    except Exception as e:
-        print(f"Error checking VPN status: {e}")
-        return False
 
 
 # Selenium Setup
@@ -123,16 +100,11 @@ def index(request: Request, response_class=HTMLResponse):
 @app.get("/search")
 def search(query: str = Query(..., description="Search query for torrents")):
     """Search The Pirate Bay for available torrents"""
-    if not is_vpn_connected():
-        try:
-            start_vpn()
-        except RuntimeError as e:
-            raise HTTPException(status_code=500, detail=str(e)) from e
-
     try:
         results = search_tpb(query)
         return {"results": results}
     except Exception as e:
+        print(e)
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
@@ -142,16 +114,10 @@ async def download(request: Request):
     req = await request.json()
     folder = f"/mnt/{req['category']}"
 
-    if not is_vpn_connected():
-        try:
-            start_vpn()
-        except RuntimeError as e:
-            raise HTTPException(status_code=500, detail=str(e)) from e
-
     try:
         # Connect to qBittorrent
         qb = Client(host=QBITTORRENT_API)
-        qb.auth_log_in("admin", "adminpassword")  # Replace with your credentials
+        qb.auth_log_in(QBT_USERNAME, QBT_PASSWORD)
 
         # Add torrent and set sequential download
         qb.torrents_add(
