@@ -112,7 +112,7 @@
                         <td>${result.seeders}</td>
                         <td>${result.leechers || "N/A"}</td>
                         <td>
-                            <button onclick="download('${result.magnet}', '${result.subcategory && result.subcategory.includes("tv") ? "tv" : "movies"}')">
+                            <button onclick="download('${result.magnet}', '${result.subcategory && result.subcategory.toLowerCase().includes("tv") ? "tv" : "movies"}')">
                                 Download
                             </button>
                         </td>
