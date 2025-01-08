@@ -16,6 +16,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 import os
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -45,10 +46,13 @@ app.add_middleware(
 def setup_driver():
     """Set up Selenium WebDriver."""
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # Run headless if you don't need the GUI
+    options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
+    options.add_argument("--disable-extensions")
+    options.add_argument("disable-infobars")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--blink-settings=imagesEnabled=false")
     return webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
 
@@ -57,14 +61,6 @@ def search_tpb(query):
     driver = setup_driver()
     try:
         driver.get(f"https://thepiratebay.org/search.php?q={query}&cat=0")  # Open Pirate Bay homepage
-
-        # Locate the search box and enter the query
-        search_box = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.NAME, "q"))
-        )
-        search_box.clear()
-        search_box.send_keys(query)
-        search_box.send_keys(Keys.RETURN)
 
         # Wait for the results to load
         WebDriverWait(driver, 10).until(
@@ -76,8 +72,9 @@ def search_tpb(query):
         rows = driver.find_elements(By.CSS_SELECTOR, "ol > li")
         for row in rows:
             try:
-                category = row.find_element(By.CSS_SELECTOR, "a").text.strip()
-                subcategory = row.find_elements(By.CSS_SELECTOR, "a")[1].text.strip()
+                anchors = row.find_elements(By.CSS_SELECTOR, ".item-type > a")
+                category = anchors[0].text.strip()
+                subcategory = anchors[1].text.strip()
                 title = row.find_element(By.CSS_SELECTOR, ".item-title > a").text.strip()
                 magnet = row.find_element(By.CSS_SELECTOR, "a[href^='magnet']").get_attribute("href")
                 seeders = int(row.find_element(By.CSS_SELECTOR, ".item-seed").text.strip())
@@ -112,25 +109,64 @@ def search(query: str = Query(..., description="Search query for torrents")):
 async def download(request: Request):
     """Download a torrent using qBittorrent."""
     req = await request.json()
-    folder = f"/mnt/{req['category']}"
+    target_directory = f"/mnt/{req['category']}"
+    filename = req.get("filename")
+    magnet_link = req.get("magnet_link")
+
+    if not filename or not magnet_link:
+        print("Filename and magnet link are required.")
+        raise HTTPException(status_code=400, detail="Filename and magnet link are required.")
 
     try:
+        # Parse the target directory
+        if req['category'] == "tv":
+            target_directory = parse_tv_show_filename(filename)
+
+            # Ensure the directory exists
+            os.makedirs(target_directory, exist_ok=True)
+
         # Connect to qBittorrent
         qb = Client(host=QBITTORRENT_API)
         qb.auth_log_in(QBT_USERNAME, QBT_PASSWORD)
 
         # Add torrent and set sequential download
         qb.torrents_add(
-            urls=req['magnet_link'],
-            save_path=folder,
-            is_sequential_download=True
+            urls=magnet_link,
+            save_path=target_directory,
+            is_sequential_download=True,
+            root_folder=(req['category'] != "tv")
         )
 
-        # Refresh Plex (if applicable, replace with your logic)
-        # os.system("curl http://127.0.0.1:32400/library/sections/all/refresh")
-
-        return {"message": "Download started successfully."}
+        return {"message": "Download started successfully.", "directory": target_directory}
+    except ValueError as ve:
+        print(ve)
+        raise HTTPException(status_code=400, detail=f"Error: {str(ve)}") from ve
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
+    
 
+def parse_tv_show_filename(filename: str) -> str:
+    """
+    Parse the filename to extract the show name and season,
+    and construct the target directory path in the Plex format.
+    Handles cases where entire seasons are downloaded as a package.
+    """
+
+    # Match "Show Name Sxx" format or generic "Show Name"
+    pattern = r"^(.*?)(?:[.\s]*[Ss](\d{2}))"
+    match = re.match(pattern, filename)
+    if not match:
+        raise ValueError(f"Filename '{filename}' does not match TV show season package pattern.")
+
+    show_name = match.group(1).strip()
+    season_number = int(match.group(2))
+
+    # Base directory: Show Name/Season XX
+    target_directory = os.path.join(
+        "/mnt/tv",
+        show_name,
+        f"Season {season_number:02d}"
+    )
+
+    return target_directory

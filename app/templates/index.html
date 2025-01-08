@@ -112,7 +112,7 @@
                         <td>${result.seeders}</td>
                         <td>${result.leechers || "N/A"}</td>
                         <td>
-                            <button onclick="download('${result.magnet}', '${result.subcategory && result.subcategory.toLowerCase().includes("tv") ? "tv" : "movies"}')">
+                            <button onclick="download('${result.magnet}', '${result.subcategory && result.subcategory.toLowerCase().includes("tv") ? "tv" : "movies"}', '${result.title}')">
                                 Download
                             </button>
                         </td>
@@ -125,11 +125,11 @@
 			ring.className = "";
         }
 
-        async function download(magnet, category) {
+        async function download(magnet, category, filename) {
             const response = await fetch(`/download`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ magnet_link: magnet, category: category }),
+                body: JSON.stringify({ magnet_link: magnet, category: category, filename: filename }),
             });
             const data = await response.json();
             alert(data.message || "Error: " + data.error);
