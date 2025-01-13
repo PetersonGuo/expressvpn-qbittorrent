@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: ./app
+    container_name: app
+    volumes:
+      - <Enter a mountpoint>:/mnt/movies
+      - <Enter a mountpoint>:/mnt/tv
+    depends_on:
+      expressvpn:
+        condition: service_healthy
+    network_mode: service:expressvpn # Use ExpressVPN's network stack
+    environment:
+      - PYTHONUNBUFFERED=1
+      - QBT_USERNAME=<Enter a username>
+      - QBT_PASSWORD=<Enter a password>
+    restart: unless-stopped
+
+  expressvpn:
+    build:
+      context: ./expressvpn
+      args:
+        DISTRIBUTION: 12.8
+        TARGETPLATFORM: linux/amd64
+    container_name: expressvpn
+    restart: unless-stopped
+    ports:
+      - "8000:8000" # Expose the app's port
+      - "8080:8080" # Expose qbittorrent port
+    environment:
+      - CODE=<CODE>
+      - SERVER=smart
+      - NETWORK=on
+      - PROTOCOL=lightway_udp
+      - CIPHER=chacha20
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    stdin_open: true
+    tty: true
+    privileged: true
+    healthcheck:
+      test: ["CMD", "expressvpn", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
