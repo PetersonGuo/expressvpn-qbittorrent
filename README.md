@@ -25,18 +25,18 @@ This project is a torrent downloader application designed for seamless media man
 ---
 
 ## Folder Structure
-├── app/
-│ ├── Dockerfile # Dockerfile for the app container
-│ ├── start.sh # Entry point for the app container
-│ ├── requirements.txt # Python dependencies
-│ ├── main.py # FastAPI application code
-├── expressvpn/
-│ ├── Dockerfile # Dockerfile for the VPN container
-│ ├── files # Scripting files
-│ │ ├── activate.exp # Script to activate ExpressVPN
-│ │ ├── start.sh # Entry point for the VPN container
-├── docker-compose.yml # Docker Compose configuration file
-└── README.md # Documentation
+├── app/\
+│ ├── Dockerfile # Dockerfile for the app container\
+│ ├── start.sh # Entry point for the app container\
+│ ├── requirements.txt # Python dependencies\
+│ ├── main.py # FastAPI application code\
+├── expressvpn/\
+│ ├── Dockerfile # Dockerfile for the VPN container\
+│ ├── files # Scripting files\
+│ │ ├── activate.exp # Script to activate ExpressVPN\
+│ │ ├── start.sh # Entry point for the VPN container\
+├── docker-compose.yml # Docker Compose configuration file\
+└── README.md # Documentation\
 
 
 ---
