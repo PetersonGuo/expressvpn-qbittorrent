@@ -97,14 +97,14 @@
             const data = await response.json();
 
             const resultsTable = document.querySelector("#results tbody");
-            resultsTable.innerHTML = ""; // Clear previous results
+            resultsTable.innerText = ""; // Clear previous results
 
             if (data.results) {
                 data.results.forEach((result) => {
                     const resultRow = document.createElement("tr");
                     resultRow.className = "result";
 
-                    resultRow.innerHTML = `
+                    resultRow.innerText = `
 						<td>${result.category}</td>
 						<td>${result.subcategory}</td>
                         <td>${result.title}</td>
@@ -120,7 +120,7 @@
                     resultsTable.appendChild(resultRow);
                 });
             } else {
-                resultsTable.innerHTML = "<tr><td colspan='7'>No results found</td></tr>";
+                resultsTable.innerText = "<tr><td colspan='7'>No results found</td></tr>";
             }
 			ring.className = "";
         }
