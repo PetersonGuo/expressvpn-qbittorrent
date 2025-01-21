@@ -1,7 +1,7 @@
-fastapi
-uvicorn
-qbittorrent-api
+fastapi>=0.109.1
+uvicorn>=0.22.0
+qbittorrent-api>=2023.10.54
 Jinja2
-selenium
-webdriver-manager
+selenium>=4.15.1
+webdriver-manager>=4.0.2
 python-dotenv
