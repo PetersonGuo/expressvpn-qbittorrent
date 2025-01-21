@@ -1,5 +1,5 @@
 # Base image
-FROM python:3.14.0a1-slim
+FROM python:3.10-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     qbittorrent-nox \
     wget \
     unzip \
-    gnupg2 \
+    gnupg \
     fonts-liberation \
     libappindicator3-1 \
     libasound2 \
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libexpat1 \
     libfontconfig1 \
     libgbm1 \
-    libgcc1 \
+    libgcc-s1 \
     libglib2.0-0 \
     libgtk-3-0 \
     libnspr4 \
@@ -44,6 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxtst6 \
     lsb-release \
     xdg-utils \
+    rustc \
+    cargo \
     && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
@@ -57,18 +59,30 @@ RUN CHROME_DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com
     && rm /tmp/chromedriver.zip \
     && chmod +x /usr/local/bin/chromedriver
 
+# Install Rust using rustup
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    ~/.cargo/bin/rustup default stable && \
+    ~/.cargo/bin/rustup update && \
+    echo 'export PATH=$PATH:$HOME/.cargo/bin' >> ~/.bashrc && \
+    export PATH=$PATH:$HOME/.cargo/bin
+
 # Copy application code
 COPY . /app
 WORKDIR /app
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Upgrade pip and install dependencies
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r /app/requirements.txt
 
+# Copy qBittorrent configuration
 COPY qBittorrent.conf /root/.config/qBittorrent/qBittorrent.conf
 
-RUN echo -e "[Preferences]\nWebUI/Username=${QBT_USERNAME}\nWebUI/Password_ha1=$(echo -n ${QBT_PASSWORD} | sha1sum | awk '{print $1}')" > /root/.config/qBittorrent/qBittorrent.conf
+# Add WebUI credentials to configuration
+RUN echo -e "[Preferences]\nWebUI/Username=${QBT_USERNAME}\nWebUI/Password_ha1=$(echo -n ${QBT_PASSWORD} | sha1sum | awk '{print $1}')" >> /root/.config/qBittorrent/qBittorrent.conf
 
+# Make the start script executable
 RUN chmod +x /app/start.sh
 
-# Start the application
+# Set default command
 CMD ["/app/start.sh"]
+
