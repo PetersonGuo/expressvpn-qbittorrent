@@ -78,7 +78,7 @@ RUN pip install --upgrade pip setuptools wheel \
 COPY qBittorrent.conf /root/.config/qBittorrent/qBittorrent.conf
 
 # Add WebUI credentials to configuration
-RUN echo -e "[Preferences]\nWebUI/Username=${QBT_USERNAME}\nWebUI/Password_ha1=$(echo -n ${QBT_PASSWORD} | sha1sum | awk '{print $1}')" >> /root/.config/qBittorrent/qBittorrent.conf
+RUN echo -e "[Preferences]\nWebUI/Username=${QBT_USERNAME}\nWebUI/Password_ha1=$(echo -n ${QBT_PASSWORD} | sha1sum | awk '{print $1}')" > /root/.config/qBittorrent/qBittorrent.conf
 
 # Make the start script executable
 RUN chmod +x /app/start.sh
