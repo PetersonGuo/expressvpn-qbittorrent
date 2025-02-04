@@ -17,6 +17,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 import os
 import re
+import functools
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -56,6 +57,7 @@ def setup_driver():
     return webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
 
+@functools.lru_cache(maxsize=128)
 def search_tpb(query):
     """Search Pirate Bay for torrents using Selenium."""
     driver = setup_driver()
@@ -98,7 +100,7 @@ def index(request: Request, response_class=HTMLResponse):
 def search(query: str = Query(..., description="Search query for torrents")):
     """Search The Pirate Bay for available torrents"""
     try:
-        results = search_tpb(query)
+        results = search_tpb(query.lower())
         return {"results": results}
     except Exception as e:
         print(e)
