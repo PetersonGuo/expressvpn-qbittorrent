@@ -16,6 +16,9 @@ services:
       - PYTHONUNBUFFERED=1
       - QBT_USERNAME=<Enter a username>
       - QBT_PASSWORD=<Enter a password>
+      - PGID=<Enter your GroupID>
+      - PUID=<Enter your UserID>
+      - UMASK=002
     restart: unless-stopped
 
   expressvpn:

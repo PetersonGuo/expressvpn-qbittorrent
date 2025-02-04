@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+chown -R ${PUID}:${PGID} /mnt/movies
+chown -R ${PUID}:${PGID} /mnt/tv
+
 # Start qBittorrent in the background
 echo "Starting qBittorrent..."
 qbittorrent-nox &
