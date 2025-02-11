@@ -156,7 +156,7 @@ def parse_tv_show_filename(filename: str) -> str:
     """
 
     # Match "Show Name Sxx" format or generic "Show Name"
-    pattern = r"^(.*?)(?:[.\s]*[Ss](\d{2}))"
+    pattern = r"^(.*?)(?:[.\s]*(?:Season\s|[Ss])(\d{1,2}))"
     match = re.match(pattern, filename)
     if not match:
         raise ValueError(f"Filename '{filename}' does not match TV show season package pattern.")
