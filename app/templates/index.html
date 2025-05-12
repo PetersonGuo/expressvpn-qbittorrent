@@ -77,7 +77,6 @@
         <thead>
             <tr>
                 <th>Category</th>
-                <th>Subcategory</th>
                 <th>Title</th>
                 <th>Magnet</th>
                 <th>Seeders</th>
@@ -125,8 +124,21 @@
         function createRow(result) {
             const row = document.createElement("tr");
 
-            row.appendChild(createCell(result.category));
-            row.appendChild(createCell(result.subcategory));
+            const CATEGORY_MAP = {
+                0:   'All',
+                100: 'Audio', 101: 'Music', 102: 'Audio books', 103: 'Sound clips', 104: 'FLAC', 199: 'Audio Other',
+                200: 'Video', 201: 'Movies', 202: 'Movies DVDR', 203: 'Music videos', 204: 'Movie clips',
+                205: 'TV shows', 206: 'Video Handheld', 207: 'HD – Movies', 208: 'HD – TV shows', 209: '3D', 299: 'Video Other',
+                300: 'Applications', 301: 'App Windows', 302: 'App Mac', 303: 'App UNIX', 304: 'App Handheld',
+                305: 'App iOS', 306: 'App Android', 399: 'App Other OS',
+                400: 'Games', 401: 'Game PC', 402: 'Game Mac', 403: 'Game PSx', 404: 'Game XBOX360', 405: 'Game Wii',
+                406: 'Game Handheld', 407: 'Game iOS', 408: 'Game Android', 499: 'Game Other',
+                500: 'Porn', 501: 'Porn Movies', 502: 'Porn Movies DVDR', 503: 'Porn Pictures', 504: 'Porn Games',
+                505: 'Porn HD – Movies', 506: 'Porn Movie clips', 599: 'Porn Other',
+                600: 'Other', 601: 'E-books', 602: 'Comics', 603: 'Pictures', 604: 'Covers', 605: 'Physibles', 699: 'Other Other'
+            }
+
+            row.appendChild(createCell(CATEGORY_MAP[result.category]));
             row.appendChild(createCell(result.title));
             row.appendChild(createCell(`<a href="${encodeURI(result.magnet)}" target="_blank">Magnet Link</a>`, true));
             row.appendChild(createCell(result.seeders));
@@ -136,10 +148,12 @@
             const downloadButton = document.createElement("button");
             downloadButton.textContent = "Download";
             downloadButton.addEventListener("click", () => {
-                download(result.magnet, result.subcategory?.toLowerCase().includes("tv") ? "tv" : "movies", result.title);
+                download(result.magnet, result.category, result.title);
             });
             downloadCell.appendChild(downloadButton);
             row.appendChild(downloadCell);
+
+            console.log(result);
 
             return row;
         }

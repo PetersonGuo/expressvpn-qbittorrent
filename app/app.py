@@ -5,15 +5,8 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+import requests
 from qbittorrentapi import Client
-
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 
 import os
 import re
@@ -43,51 +36,21 @@ app.add_middleware(
 )
 
 
-# Selenium Setup
-def setup_driver():
-    """Set up Selenium WebDriver."""
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-extensions")
-    options.add_argument("disable-infobars")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--blink-settings=imagesEnabled=false")
-    return webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-
-
 @functools.lru_cache(maxsize=128)
-def search_tpb(query):
-    """Search Pirate Bay for torrents using Selenium."""
-    driver = setup_driver()
-    try:
-        driver.get(f"https://thepiratebay.org/search.php?q={query}&cat=0")  # Open Pirate Bay homepage
-
-        # Wait for the results to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "ol"))
-        )
-
-        # Extract results
-        results = []
-        rows = driver.find_elements(By.CSS_SELECTOR, "ol > li")
-        for row in rows:
-            try:
-                anchors = row.find_elements(By.CSS_SELECTOR, ".item-type > a")
-                category = anchors[0].text.strip()
-                subcategory = anchors[1].text.strip()
-                title = row.find_element(By.CSS_SELECTOR, ".item-title > a").text.strip()
-                magnet = row.find_element(By.CSS_SELECTOR, "a[href^='magnet']").get_attribute("href")
-                seeders = int(row.find_element(By.CSS_SELECTOR, ".item-seed").text.strip())
-                leechers = int(row.find_element(By.CSS_SELECTOR, ".item-leech").text.strip())
-                results.append({"category": category, "subcategory": subcategory, "title": title, "magnet": magnet, "seeders": seeders, "leechers": leechers})
-            except Exception as e:
-                print(f"Error parsing row: {e}")
-
-        return sorted(results, key=lambda x: x["seeders"], reverse=True)
-    finally:
-        driver.quit()  # Close the browser
+def search_tpb(query: str):
+    resp = requests.get(f"https://apibay.org/q.php?q={query}", timeout=10)
+    resp.raise_for_status()
+    data = resp.json()  # a list of dicts
+    results = []
+    for item in data:
+        results.append({
+            "category": item["category"],
+            "title":    item["name"],
+            "magnet":   f"magnet:?xt=urn:btih:{item['info_hash']}",
+            "seeders":  int(item["seeders"]),
+            "leechers": int(item["leechers"]),
+        })
+    return sorted(results, key=lambda x: x["seeders"], reverse=True)
 
 
 @app.get("/")
@@ -119,9 +82,23 @@ async def download(request: Request):
         print("Filename and magnet link are required.")
         raise HTTPException(status_code=400, detail="Filename and magnet link are required.")
 
+    # CATEGORY_MAP = {
+    #     0:   'All',
+    #     100: 'Audio', 101: 'Music', 102: 'Audio books', 103: 'Sound clips', 104: 'FLAC', 199: 'Audio Other',
+    #     200: 'Video', 201: 'Movies', 202: 'Movies DVDR', 203: 'Music videos', 204: 'Movie clips',
+    #     205: 'TV shows', 206: 'Video Handheld', 207: 'HD – Movies', 208: 'HD – TV shows', 209: '3D', 299: 'Video Other',
+    #     300: 'Applications', 301: 'App Windows', 302: 'App Mac', 303: 'App UNIX', 304: 'App Handheld',
+    #     305: 'App iOS', 306: 'App Android', 399: 'App Other OS',
+    #     400: 'Games', 401: 'Game PC', 402: 'Game Mac', 403: 'Game PSx', 404: 'Game XBOX360', 405: 'Game Wii',
+    #     406: 'Game Handheld', 407: 'Game iOS', 408: 'Game Android', 499: 'Game Other',
+    #     500: 'Porn', 501: 'Porn Movies', 502: 'Porn Movies DVDR', 503: 'Porn Pictures', 504: 'Porn Games',
+    #     505: 'Porn HD – Movies', 506: 'Porn Movie clips', 599: 'Porn Other',
+    #     600: 'Other', 601: 'E-books', 602: 'Comics', 603: 'Pictures', 604: 'Covers', 605: 'Physibles', 699: 'Other Other'
+    # }
+
     try:
         # Parse the target directory
-        if req['category'] == "tv":
+        if req['category'] in {205, 208}:
             target_directory = parse_tv_show_filename(filename)
 
             # Ensure the directory exists
@@ -159,7 +136,7 @@ def parse_tv_show_filename(filename: str) -> str:
     pattern = r"^(.*?)(?:[.\s]*(?:Season\s|[Ss])(\d{1,2}))"
     match = re.match(pattern, filename)
     if not match:
-        raise ValueError(f"Filename '{filename}' does not match TV show season package pattern.")
+        return f"/mnt/tv/{filename}"
 
     show_name = match.group(1).strip()
     season_number = int(match.group(2))
