@@ -73,8 +73,9 @@ def search(query: str = Query(..., description="Search query for torrents")):
 @app.post("/download")
 async def download(request: Request):
     """Download a torrent using qBittorrent."""
+    TV_CATEGORIES = {205, 208}  # TV shows
     req = await request.json()
-    target_directory = f"/mnt/{req['category']}"
+    target_directory = f"/mnt/{'tv' if req['category'] in TV_CATEGORIES else 'movies'}"
     filename = req.get("filename")
     magnet_link = req.get("magnet_link")
 
@@ -82,23 +83,9 @@ async def download(request: Request):
         print("Filename and magnet link are required.")
         raise HTTPException(status_code=400, detail="Filename and magnet link are required.")
 
-    # CATEGORY_MAP = {
-    #     0:   'All',
-    #     100: 'Audio', 101: 'Music', 102: 'Audio books', 103: 'Sound clips', 104: 'FLAC', 199: 'Audio Other',
-    #     200: 'Video', 201: 'Movies', 202: 'Movies DVDR', 203: 'Music videos', 204: 'Movie clips',
-    #     205: 'TV shows', 206: 'Video Handheld', 207: 'HD – Movies', 208: 'HD – TV shows', 209: '3D', 299: 'Video Other',
-    #     300: 'Applications', 301: 'App Windows', 302: 'App Mac', 303: 'App UNIX', 304: 'App Handheld',
-    #     305: 'App iOS', 306: 'App Android', 399: 'App Other OS',
-    #     400: 'Games', 401: 'Game PC', 402: 'Game Mac', 403: 'Game PSx', 404: 'Game XBOX360', 405: 'Game Wii',
-    #     406: 'Game Handheld', 407: 'Game iOS', 408: 'Game Android', 499: 'Game Other',
-    #     500: 'Porn', 501: 'Porn Movies', 502: 'Porn Movies DVDR', 503: 'Porn Pictures', 504: 'Porn Games',
-    #     505: 'Porn HD – Movies', 506: 'Porn Movie clips', 599: 'Porn Other',
-    #     600: 'Other', 601: 'E-books', 602: 'Comics', 603: 'Pictures', 604: 'Covers', 605: 'Physibles', 699: 'Other Other'
-    # }
-
     try:
         # Parse the target directory
-        if req['category'] in {205, 208}:
+        if req['category'] in TV_CATEGORIES:
             target_directory = parse_tv_show_filename(filename)
 
             # Ensure the directory exists
