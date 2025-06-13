@@ -73,7 +73,7 @@ def search(query: str = Query(..., description="Search query for torrents")):
 @app.post("/download")
 async def download(request: Request):
     """Download a torrent using qBittorrent."""
-    TV_CATEGORIES = {205, 208}  # TV shows
+    TV_CATEGORIES = {205, 208, 212}  # TV shows
     req = await request.json()
     target_directory = f"/mnt/{'tv' if req['category'] in TV_CATEGORIES else 'movies'}"
     filename = req.get("filename")
