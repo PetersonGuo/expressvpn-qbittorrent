@@ -113,7 +113,7 @@ async def download(request: Request):
         qb.auth_log_in(QBT_USERNAME, QBT_PASSWORD)
 
         # Add torrent and set sequential download
-        content_layout = "Subfolder" if category in TV_CATEGORIES else "NoSubfolder"
+        content_layout = "Subfolder" if category in MOVIE_CATEGORIES else "NoSubfolder"
         qb.torrents_add(
             urls=magnet_link,
             save_path=target_directory,
