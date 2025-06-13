@@ -1,18 +1,17 @@
 """Main module"""
 
-from fastapi import FastAPI, Query, Request, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+import functools
 import logging
-import requests
-from qbittorrentapi import Client
-
 import os
 import re
-import functools
+
+import requests
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from qbittorrentapi import Client
 
 logging.basicConfig(
     level=logging.INFO,
