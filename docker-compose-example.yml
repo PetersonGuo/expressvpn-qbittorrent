@@ -43,6 +43,7 @@ services:
       context: ./app
     container_name: app
     network_mode: service:gluetun
+    user: <Enter your user ID here>:<Enter your group ID here>
     environment:
       - TZ=America/Toronto
       - PYTHONUNBUFFERED=1

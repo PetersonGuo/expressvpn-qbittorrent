@@ -108,9 +108,6 @@ async def download(request: Request):
         if category in TV_CATEGORIES:
             target_directory = parse_tv_show_filename(filename)
 
-            # Ensure the directory exists
-            os.makedirs(target_directory, exist_ok=True)
-
         # Connect to qBittorrent
         qb = Client(host=QBITTORRENT_API)
         qb.auth_log_in(QBT_USERNAME, QBT_PASSWORD)
