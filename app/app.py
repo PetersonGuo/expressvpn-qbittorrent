@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+import logging
 import requests
 from qbittorrentapi import Client
 
@@ -12,6 +13,12 @@ import os
 import re
 import functools
 from dotenv import load_dotenv
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -73,8 +80,9 @@ def search(query: str = Query(..., description="Search query for torrents")):
 @app.post("/download")
 async def download(request: Request):
     """Download a torrent using qBittorrent."""
-    TV_CATEGORIES = {205, 208, 212}  # TV shows
+    TV_CATEGORIES = ('205', '208', '212')  # TV shows
     req = await request.json()
+    logger.info(f"Download request: {req}")
     target_directory = f"/mnt/{'tv' if req['category'] in TV_CATEGORIES else 'movies'}"
     filename = req.get("filename")
     magnet_link = req.get("magnet_link")
