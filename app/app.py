@@ -101,7 +101,7 @@ async def download(request: Request):
         logger.error(f"Invalid magnet link format: {magnet_link}")
         raise HTTPException(status_code=400, detail="Invalid magnet link format.")
 
-    if "/" in filename or "\\" in filename or ".." in filename:
+    if "/" in filename or "\\" in filename or "../" in filename or "..\\" in filename:
         logger.error(f"Invalid filename: {filename}")
         raise HTTPException(status_code=400, detail="Invalid filename.")
 
