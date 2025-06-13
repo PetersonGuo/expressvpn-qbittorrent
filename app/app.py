@@ -17,9 +17,9 @@ load_dotenv()
 
 # Configuration
 SEARCH_URL = "https://thepiratebay.org/search.php?"
-QBITTORRENT_API = "http://127.0.0.1:8080"
-QBT_USERNAME = os.getenv("QBT_USERNAME")
-QBT_PASSWORD = os.getenv("QBT_PASSWORD")
+QBITTORRENT_API = f"http://127.0.0.1:{os.getenv('QBITTORRENT_WEBUI_PORT', 8080)}"
+QBT_USERNAME = os.getenv("QBT_USERNAME", "admin")
+QBT_PASSWORD = os.getenv("QBT_PASSWORD", "adminadmin")
 
 templates = Jinja2Templates(directory="templates")
 

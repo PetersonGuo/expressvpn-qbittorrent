@@ -1,7 +1,0 @@
-#!/usr/bin/expect -f
-
-set timeout -1
-spawn qbittorrent-nox
-expect "Press 'y' key to accept and continue..."
-send "y\r"
-expect "WebUI will be started shortly after internal preparations. Please wait..."
