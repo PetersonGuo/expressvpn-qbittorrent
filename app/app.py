@@ -89,16 +89,20 @@ async def download(request: Request):
     category = req.get("category")
 
     if not category or category not in (TV_CATEGORIES | MOVIE_CATEGORIES):
+        logger.error(f"Invalid category specified: {category}")
         raise HTTPException(status_code=400, detail="Invalid category specified.")
 
     if not filename or not magnet_link:
         print("Filename and magnet link are required.")
+        logger.error("Filename and magnet link are required.")
         raise HTTPException(status_code=400, detail="Filename and magnet link are required.")
 
     if not MAGNET_REGEX.match(magnet_link):
+        logger.error(f"Invalid magnet link format: {magnet_link}")
         raise HTTPException(status_code=400, detail="Invalid magnet link format.")
 
     if "/" in filename or "\\" in filename or ".." in filename:
+        logger.error(f"Invalid filename: {filename}")
         raise HTTPException(status_code=400, detail="Invalid filename.")
 
     target_directory = f"/mnt/movies"
