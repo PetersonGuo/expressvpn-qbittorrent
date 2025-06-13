@@ -26,6 +26,7 @@ SEARCH_URL = "https://thepiratebay.org/search.php?"
 QBITTORRENT_API = f"http://127.0.0.1:{os.getenv('QBITTORRENT_WEBUI_PORT', 8080)}"
 QBT_USERNAME = os.getenv("QBT_USERNAME")
 QBT_PASSWORD = os.getenv("QBT_PASSWORD")
+MAGNET_REGEX = re.compile(r"^magnet:\?xt=urn:btih:[0-9a-fA-F]{40}.*$")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -50,7 +51,7 @@ def search_tpb(query: str):
     results = []
     for item in data:
         results.append({
-            "category": item["category"],
+            "category": int(item["category"]),
             "title":    item["name"],
             "magnet":   f"magnet:?xt=urn:btih:{item['info_hash']}",
             "seeders":  int(item["seeders"]),
@@ -69,30 +70,42 @@ def index(request: Request, response_class=HTMLResponse):
 def search(query: str = Query(..., description="Search query for torrents")):
     """Search The Pirate Bay for available torrents"""
     try:
-        results = search_tpb(query.lower())
+        results = search_tpb(query.strip().lower())
         return {"results": results}
     except Exception as e:
-        print(e)
+        logger.error(f"Error during search: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 @app.post("/download")
 async def download(request: Request):
     """Download a torrent using qBittorrent."""
-    TV_CATEGORIES = {'205', '208', '212'}  # TV shows
+    TV_CATEGORIES = {205, 208, 212}  # TV shows
+    MOVIE_CATEGORIES = {201, 202, 204, 207, 211, 501, 502, 505, 506, 507}  # Movies
     req = await request.json()
     logger.info(f"Download request: {req}")
-    target_directory = f"/mnt/{'tv' if req['category'] in TV_CATEGORIES else 'movies'}"
     filename = req.get("filename")
     magnet_link = req.get("magnet_link")
+    category = req.get("category")
+
+    if not category or category not in (TV_CATEGORIES | MOVIE_CATEGORIES):
+        raise HTTPException(status_code=400, detail="Invalid category specified.")
 
     if not filename or not magnet_link:
         print("Filename and magnet link are required.")
         raise HTTPException(status_code=400, detail="Filename and magnet link are required.")
 
+    if not MAGNET_REGEX.match(magnet_link):
+        raise HTTPException(status_code=400, detail="Invalid magnet link format.")
+
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+
+    target_directory = f"/mnt/movies"
+
     try:
         # Parse the target directory
-        if req['category'] in TV_CATEGORIES:
+        if category in TV_CATEGORIES:
             target_directory = parse_tv_show_filename(filename)
 
             # Ensure the directory exists
@@ -103,21 +116,22 @@ async def download(request: Request):
         qb.auth_log_in(QBT_USERNAME, QBT_PASSWORD)
 
         # Add torrent and set sequential download
+        content_layout = "Subfolder" if category in TV_CATEGORIES else "NoSubfolder"
         qb.torrents_add(
             urls=magnet_link,
             save_path=target_directory,
             is_sequential_download=True,
-            root_folder=(req['category'] != "tv")
+            content_layout=content_layout,
         )
 
         return {"message": "Download started successfully.", "directory": target_directory}
     except ValueError as ve:
-        print(ve)
+        logger.error(f"ValueError: {str(ve)}")
         raise HTTPException(status_code=400, detail=f"Error: {str(ve)}") from ve
     except Exception as e:
-        print(e)
+        logger.error(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
-    
+
 
 def parse_tv_show_filename(filename: str) -> str:
     """
